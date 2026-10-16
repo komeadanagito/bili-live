@@ -1,7 +1,7 @@
 use crate::{
     api::{auth, client, data, text, Result, LIVE, UA},
     events::AppEventSink,
-    models::{ConnectionStatus, Credentials},
+    models::{ConnectionStatus, Credentials, RoomOnlineInfo},
     protocol::{self, Incoming},
 };
 use futures_util::{SinkExt, StreamExt};
@@ -63,6 +63,9 @@ pub fn status(sink: &AppEventSink, room: &str, state: &str, message: &str) {
         state: state.into(),
         room_id: room.into(),
         message: message.into(),
+        popularity: None,
+        online: None,
+        watched: None,
     });
 }
 async fn run_session(
@@ -178,6 +181,9 @@ async fn run_session(
     .await
     .map_err(|_| "发送弹幕认证失败")?;
     let mut authenticated = false;
+    let mut current_popularity: u64 = 0;
+    let mut current_online: Option<u64> = None;
+    let mut current_watched: Option<String> = None;
     let mut interval = tokio::time::interval(Duration::from_secs(30));
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     interval.tick().await;
@@ -202,7 +208,30 @@ async fn run_session(
                                     ws.send(Message::Binary(protocol::packet(2, b"{}").into())).await.map_err(|_| "发送弹幕心跳失败")?;
                                 }
                                 Incoming::Auth(_) => return Err("弹幕认证失败，将重新获取令牌；若持续失败请重新登录".into()),
+                                Incoming::Heartbeat(popularity) if authenticated => {
+                                    current_popularity = popularity;
+                                    sink.emit_online(RoomOnlineInfo {
+                                        room_id: room_id.clone(),
+                                        popularity,
+                                        online: current_online,
+                                        watched: current_watched.clone(),
+                                    });
+                                }
                                 Incoming::Command(command) if authenticated => {
+                                    if let Some((online, watched)) = protocol::extract_online_info(&command) {
+                                        if online.is_some() {
+                                            current_online = online;
+                                        }
+                                        if watched.is_some() {
+                                            current_watched = watched;
+                                        }
+                                        sink.emit_online(RoomOnlineInfo {
+                                            room_id: room_id.clone(),
+                                            popularity: current_popularity,
+                                            online: current_online,
+                                            watched: current_watched.clone(),
+                                        });
+                                    }
                                     for event in protocol::messages(&room_id, &command) { sink.emit_message(event); }
                                 }
                                 _ => {}

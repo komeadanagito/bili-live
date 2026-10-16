@@ -142,11 +142,29 @@ export default function App() {
       const stopStatus = await listen<ConnectionStatus>('connection-status', event => {
         if (!disposed) {
           eventRoom.current = event.payload.roomId;
-          setConnection(event.payload);
+          setConnection(prev => ({
+            ...event.payload,
+            popularity: event.payload.popularity ?? prev.popularity,
+            online: event.payload.online ?? prev.online,
+            watched: event.payload.watched ?? prev.watched,
+          }));
         }
       });
       if (disposed) stopStatus();
       else cleanup.push(stopStatus);
+
+      const stopOnline = await listen<{ roomId: string; popularity: number; online?: number; watched?: string }>('room-online', event => {
+        if (!disposed && (!eventRoom.current || event.payload.roomId === eventRoom.current)) {
+          setConnection(prev => ({
+            ...prev,
+            popularity: event.payload.popularity || prev.popularity,
+            online: event.payload.online ?? prev.online,
+            watched: event.payload.watched ?? prev.watched,
+          }));
+        }
+      });
+      if (disposed) stopOnline();
+      else cleanup.push(stopOnline);
     };
 
     void subscribe().catch(e => {
@@ -329,6 +347,14 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {/* 极缓环境沐光流动层 (Ambient Slow Sunlight Shimmer) */}
+      <div className="ambient-sunlight-canvas" aria-hidden="true" data-tauri-drag-region>
+        <div className="sunbeam-orb orb-pink" />
+        <div className="sunbeam-orb orb-blue" />
+        <div className="sunbeam-orb orb-amber" />
+        <div className="sunbeam-orb orb-purple" />
+      </div>
+
       {/* Invisible Global Top Edge Drag Bar */}
       <div
         className="app-window-drag-strip"

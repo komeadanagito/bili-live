@@ -15,7 +15,7 @@
   </p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/version-v0.1.0-blue?style=flat-square" alt="Version" />
+    <img src="https://img.shields.io/badge/version-v0.1.1-blue?style=flat-square" alt="Version" />
     <img src="https://img.shields.io/badge/platform-Windows%20x64-0078D6?style=flat-square" alt="Platform" />
     <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License" />
   </p>
@@ -29,7 +29,10 @@
 > A clean, native desktop companion for Bilibili streamers. Built for instant startup, low memory footprint, and secure credential handling.
 
 <div align="center">
-  <img src="docs/images/image.png" alt="Bili Live Console Preview" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 16px 0 28px 0;" />
+  <p align="center"><b>🌙 Dark Mode</b></p>
+  <img src="docs/images/image-dark.png" alt="Bili Live Console Dark Mode" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 8px 0 24px 0;" />
+  <p align="center"><b>☀️ Light Mode</b></p>
+  <img src="docs/images/image-light.png" alt="Bili Live Console Light Mode" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 8px 0 24px 0;" />
 </div>
 
 ---
@@ -38,7 +41,7 @@
 
 - **QR Code Sign-in** &mdash; Fast authentication with the mobile app; credentials are encrypted in Windows Credential Manager without plain cookies on disk.
 - **Broadcast Control** &mdash; Category selection, one-click start/stop broadcasting, and protected RTMP stream keys ready for OBS.
-- **Live Danmaku & Interaction** &mdash; Real-time Danmaku, gift events, Super Chats, guard renewals, and viewer interactions with automatic reconnection.
+- **Live Danmaku & Emoticons** &mdash; Real-time Danmaku with official Bilibili emoticon rendering, gift events, Super Chats, guard renewals, and viewer interactions with automatic reconnection.
 - **Post-Stream Summary** &mdash; Instant overview of duration, total views, peak viewers, danmaku counts, and fan trends upon ending a stream.
 - **Dual-Mode Workflow** &mdash; Run natively as a desktop app or launch in any browser for full-featured debugging.
 

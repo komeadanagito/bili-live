@@ -5,6 +5,35 @@ export interface Area { id: number; name: string; children: Area[] }
 export interface StreamInfo { addr: string; code: string; liveKey: string }
 export interface LiveStats { available: boolean; warning: string | null; addFans: number; danmuNum: number; hamsterRmb: number; liveTime: number; maxOnline: number; newFansClub: number; watchedCount: number }
 export type MessageKind = 'danmaku' | 'gift' | 'guard' | 'superchat' | 'superchat-delete' | 'interact' | 'notice';
-export interface LiveMessage { id: string; roomId: string; kind: MessageKind; user: string; uid: string; text: string; timestamp: number; amount?: number; quantity?: number; medal?: string; raw?: unknown }
-export interface ConnectionStatus { state: 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'; roomId: string; message: string }
+export interface LiveMessage {
+  id: string;
+  roomId: string;
+  kind: MessageKind;
+  user: string;
+  uid: string;
+  text: string;
+  timestamp: number;
+  amount?: number;
+  quantity?: number;
+  medal?: string;
+  avatar?: string;
+  emots?: Record<string, string>;
+  raw?: unknown;
+}
+
+export interface RoomOnlineInfo {
+  roomId: string;
+  popularity: number;
+  online?: number;
+  watched?: string;
+}
+
+export interface ConnectionStatus {
+  state: 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error';
+  roomId: string;
+  message: string;
+  popularity?: number;
+  online?: number;
+  watched?: string;
+}
 export type Theme = 'dark' | 'pink-light';

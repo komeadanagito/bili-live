@@ -70,6 +70,23 @@ pub struct ConnectionStatus {
     pub state: String,
     pub room_id: String,
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub popularity: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub online: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub watched: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoomOnlineInfo {
+    pub room_id: String,
+    pub popularity: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub online: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub watched: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -88,6 +105,10 @@ pub struct LiveMessage {
     pub quantity: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub medal: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emots: Option<std::collections::HashMap<String, String>>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -97,4 +118,6 @@ pub enum ServerEvent {
     ConnectionStatus(ConnectionStatus),
     #[serde(rename = "live-message")]
     LiveMessage(LiveMessage),
+    #[serde(rename = "room-online")]
+    RoomOnline(RoomOnlineInfo),
 }

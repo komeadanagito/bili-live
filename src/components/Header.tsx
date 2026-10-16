@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { LogIn, RefreshCw, Wifi, WifiOff, LogOut, Sun, Moon, Radio, Minus, Square, X } from 'lucide-react';
+import { LogIn, RefreshCw, Wifi, WifiOff, LogOut, Sun, Moon, Radio, Minus, Square, X, Flame } from 'lucide-react';
 import type { Account, ConnectionStatus, Theme } from '../types';
 import {
   isDesktop,
@@ -86,6 +86,23 @@ export default function Header({
           }
           text={connectionText}
         />
+
+        {/* Dynamic Online & Popularity Pill */}
+        {isRoomConnected && (connection.popularity !== undefined && connection.popularity > 0 || connection.online !== undefined && connection.online > 0) && (
+          <div className="dynamic-pill pill-popularity font-mono">
+            <span className="dynamic-pill-icon">
+              <Flame size={13} className="status-icon-flame" />
+            </span>
+            <span className="dynamic-pill-label">
+              {connection.popularity && connection.popularity > 0
+                ? connection.popularity >= 10000
+                  ? `人气 ${(connection.popularity / 10000).toFixed(1)}万`
+                  : `人气 ${connection.popularity}`
+                : ''}
+              {connection.online && connection.online > 0 ? ` • ${connection.online}人在线` : ''}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="header-right">

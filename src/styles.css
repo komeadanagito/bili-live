@@ -8,21 +8,42 @@
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Ambient Frosted Glass Canvas with Gentle Pastel Underglow (微透温润磨砂底板，保留原有经典粉白配色，确保清晰可读) */
-  --bg-app-ambient: radial-gradient(circle at 8% 12%, rgba(255, 110, 160, 0.35) 0%, transparent 48%),
-                     radial-gradient(circle at 92% 88%, rgba(56, 189, 248, 0.32) 0%, transparent 48%),
-                     radial-gradient(circle at 48% 42%, rgba(216, 180, 254, 0.28) 0%, transparent 52%),
-                     radial-gradient(circle at 82% 12%, rgba(251, 146, 60, 0.2) 0%, transparent 38%),
-                     rgba(244, 246, 251, 0.72);
-  --bg-app: rgba(244, 246, 251, 0.72);
+  --bg-app-ambient: radial-gradient(circle at 10% 12%, rgba(255, 105, 160, 0.42) 0%, transparent 52%),
+                     radial-gradient(circle at 90% 88%, rgba(56, 189, 248, 0.38) 0%, transparent 52%),
+                     radial-gradient(circle at 50% 45%, rgba(216, 180, 254, 0.35) 0%, transparent 55%),
+                     radial-gradient(circle at 80% 15%, rgba(251, 191, 36, 0.28) 0%, transparent 45%),
+                     rgba(244, 246, 252, 0.65);
+  --bg-app: rgba(244, 246, 252, 0.65);
 
-  /* Translucent Liquid Glass Surfaces (透明度更低、更厚实温润的磨砂白，彻底遮住桌面杂乱文字，字迹高对比清晰) */
+  /* Translucent Liquid Glass Surfaces (白粉主题彩色流光玻璃配置) */
+  --liquid-card-bg: linear-gradient(135deg, 
+    rgba(255, 222, 238, 0.82) 0%, 
+    rgba(255, 242, 249, 0.78) 22%, 
+    rgba(254, 238, 224, 0.75) 42%, 
+    rgba(235, 243, 255, 0.78) 65%, 
+    rgba(222, 248, 255, 0.8) 85%, 
+    rgba(255, 226, 242, 0.82) 100%
+  );
+  --liquid-nav-bg: linear-gradient(170deg, 
+    rgba(255, 202, 226, 0.88) 0%, 
+    rgba(255, 236, 246, 0.82) 35%, 
+    rgba(240, 232, 255, 0.78) 65%, 
+    rgba(218, 244, 255, 0.82) 100%
+  );
+  --liquid-header-bg: linear-gradient(95deg, 
+    rgba(255, 220, 238, 0.88) 0%, 
+    rgba(255, 246, 250, 0.84) 30%, 
+    rgba(254, 238, 216, 0.8) 65%, 
+    rgba(222, 246, 255, 0.85) 100%
+  );
+
   --glass-sidebar: rgba(255, 255, 255, 0.82);
   --glass-header: rgba(255, 255, 255, 0.85);
-  --glass-card: rgba(255, 255, 255, 0.84);
-  --glass-card-subtle: rgba(255, 255, 255, 0.65);
+  --glass-card: rgba(255, 255, 255, 0.82);
+  --glass-card-subtle: rgba(255, 255, 255, 0.58);
   --glass-hover: rgba(255, 255, 255, 0.95);
   --glass-active: rgba(255, 102, 153, 0.16);
-  --glass-input: rgba(255, 255, 255, 0.82);
+  --glass-input: rgba(255, 255, 255, 0.78);
 
   /* Liquid Glass Borders */
   --glass-border: rgba(255, 255, 255, 0.88);
@@ -72,21 +93,41 @@
    THEME: DARK CYAN TRANSPARENT LIQUID GLASS (黑浅蓝透明液态玻璃主题)
    ========================================================================== */
 :root[data-theme="dark"] {
-  /* Ambient Dark Cyan Frosted Glass (微透磨砂黑浅蓝，保留暗色经典配色，字迹清晰锐利) */
-  --bg-app-ambient: radial-gradient(circle at 10% 12%, rgba(56, 189, 248, 0.2) 0%, transparent 45%),
-                     radial-gradient(circle at 90% 88%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
-                     radial-gradient(circle at 45% 40%, rgba(14, 165, 233, 0.15) 0%, transparent 60%),
-                     rgba(9, 14, 23, 0.78);
-  --bg-app: rgba(9, 14, 23, 0.78);
+  /* Ambient Dark Cyan Frosted Glass (微透磨砂黑浅蓝，保留暗色大配色，注入极光深色彩色交融) */
+  --bg-app-ambient: radial-gradient(circle at 10% 12%, rgba(14, 165, 233, 0.45) 0%, transparent 55%),
+                     radial-gradient(circle at 90% 88%, rgba(139, 92, 246, 0.42) 0%, transparent 55%),
+                     radial-gradient(circle at 45% 40%, rgba(236, 72, 153, 0.32) 0%, transparent 60%),
+                     radial-gradient(circle at 80% 15%, rgba(20, 184, 166, 0.35) 0%, transparent 50%),
+                     rgba(8, 12, 22, 0.75);
+  --bg-app: rgba(8, 12, 22, 0.75);
 
-  /* Translucent Dark Cyan Liquid Glass Surfaces (透明度更低、更深邃厚实的磨砂蓝黑，彻底遮蔽背景杂色) */
+  /* Translucent Dark Cyan Liquid Glass Surfaces (深色专属极光彩色玻璃：深海幽蓝、紫罗兰、冰青交融) */
+  --liquid-card-bg: linear-gradient(135deg, 
+    rgba(28, 18, 54, 0.86) 0%, 
+    rgba(14, 28, 56, 0.82) 25%, 
+    rgba(8, 42, 70, 0.84) 50%, 
+    rgba(34, 18, 50, 0.82) 75%, 
+    rgba(12, 34, 58, 0.86) 100%
+  );
+  --liquid-nav-bg: linear-gradient(170deg, 
+    rgba(42, 16, 62, 0.9) 0%, 
+    rgba(16, 28, 56, 0.86) 38%, 
+    rgba(8, 45, 75, 0.88) 100%
+  );
+  --liquid-header-bg: linear-gradient(95deg, 
+    rgba(38, 16, 56, 0.88) 0%, 
+    rgba(14, 28, 52, 0.84) 35%, 
+    rgba(8, 48, 78, 0.88) 75%, 
+    rgba(26, 18, 52, 0.86) 100%
+  );
+
   --glass-sidebar: rgba(13, 20, 34, 0.82);
   --glass-header: rgba(13, 20, 34, 0.85);
-  --glass-card: rgba(14, 22, 38, 0.84);
-  --glass-card-subtle: rgba(18, 28, 48, 0.65);
+  --glass-card: rgba(14, 22, 38, 0.82);
+  --glass-card-subtle: rgba(18, 28, 48, 0.6);
   --glass-hover: rgba(30, 48, 78, 0.88);
   --glass-active: rgba(14, 165, 233, 0.25);
-  --glass-input: rgba(10, 16, 28, 0.82);
+  --glass-input: rgba(10, 16, 28, 0.78);
 
   /* Cyan Specular Borders */
   --glass-border: rgba(56, 189, 248, 0.24);
@@ -222,28 +263,192 @@ button:disabled {
 }
 
 /* ==========================================================================
+   AMBIENT SUNLIGHT SHIMMER (环境极缓沐光颜色混杂混动动效 - 拒绝机械平移)
+   ========================================================================== */
+.ambient-sunlight-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.sunbeam-orb {
+  position: absolute;
+  will-change: transform, border-radius, opacity;
+  pointer-events: none;
+  mix-blend-mode: normal;
+}
+
+/* 4 团柔和彩色流体光斑：有机形变挤压、交融混杂、微相变呼吸 */
+.orb-pink {
+  top: -80px;
+  left: -40px;
+  width: 640px;
+  height: 640px;
+  background: radial-gradient(circle, rgba(255, 100, 160, 0.6) 0%, rgba(255, 185, 220, 0.3) 48%, transparent 72%);
+  filter: blur(80px);
+  animation: fluidColorMorph1 20s ease-in-out infinite alternate;
+}
+
+.orb-blue {
+  bottom: -100px;
+  right: -60px;
+  width: 740px;
+  height: 740px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.55) 0%, rgba(147, 197, 253, 0.28) 48%, transparent 72%);
+  filter: blur(90px);
+  animation: fluidColorMorph2 25s ease-in-out infinite alternate;
+}
+
+.orb-amber {
+  top: 40px;
+  right: 120px;
+  width: 540px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(254, 215, 170, 0.24) 48%, transparent 72%);
+  filter: blur(75px);
+  animation: fluidColorMorph3 19s ease-in-out infinite alternate;
+}
+
+.orb-purple {
+  bottom: 80px;
+  left: 200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(216, 180, 254, 0.5) 0%, rgba(192, 132, 252, 0.26) 48%, transparent 72%);
+  filter: blur(85px);
+  animation: fluidColorMorph4 23s ease-in-out infinite alternate;
+}
+
+/* 深色主题下的专属适配彩色光斑 (深海极光蓝、紫罗兰、极光粉红、冷翠绿，深邃而绚烂) */
+:root[data-theme="dark"] .orb-pink {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.52) 0%, rgba(219, 39, 119, 0.26) 48%, transparent 72%);
+}
+:root[data-theme="dark"] .orb-blue {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.58) 0%, rgba(56, 189, 248, 0.3) 48%, transparent 72%);
+}
+:root[data-theme="dark"] .orb-amber {
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.48) 0%, rgba(13, 148, 136, 0.24) 48%, transparent 72%);
+}
+:root[data-theme="dark"] .orb-purple {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.52) 0%, rgba(147, 51, 234, 0.28) 48%, transparent 72%);
+}
+
+/* 形态扭曲挤压、流体交融（非平移，是颜色水乳交融般混动） */
+@keyframes fluidColorMorph1 {
+  0% {
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    border-radius: 65% 35% 50% 50% / 35% 55% 45% 65%;
+    transform: translate(35px, -20px) scale(1.08, 0.94) rotate(4deg);
+  }
+  66% {
+    border-radius: 35% 65% 42% 58% / 55% 35% 65% 45%;
+    transform: translate(-20px, 30px) scale(0.95, 1.07) rotate(-3deg);
+  }
+  100% {
+    border-radius: 50% 50% 65% 35% / 40% 60% 40% 60%;
+    transform: translate(15px, 15px) scale(1.04, 0.98) rotate(2deg);
+  }
+}
+
+@keyframes fluidColorMorph2 {
+  0% {
+    border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    border-radius: 38% 62% 60% 40% / 45% 55% 45% 55%;
+    transform: translate(-30px, -25px) scale(1.06, 0.95) rotate(-4deg);
+  }
+  66% {
+    border-radius: 60% 40% 35% 65% / 55% 45% 55% 45%;
+    transform: translate(25px, -15px) scale(0.96, 1.05) rotate(3deg);
+  }
+  100% {
+    border-radius: 45% 55% 50% 50% / 40% 60% 40% 60%;
+    transform: translate(-10px, 20px) scale(1.02, 0.98) rotate(-2deg);
+  }
+}
+
+@keyframes fluidColorMorph3 {
+  0% {
+    border-radius: 60% 40% 55% 45% / 45% 55% 45% 55%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    border-radius: 40% 60% 45% 55% / 60% 40% 60% 40%;
+    transform: translate(-25px, 20px) scale(1.07, 0.96) rotate(3deg);
+  }
+  66% {
+    border-radius: 55% 45% 65% 35% / 35% 65% 35% 65%;
+    transform: translate(20px, -25px) scale(0.95, 1.06) rotate(-4deg);
+  }
+  100% {
+    border-radius: 48% 52% 40% 60% / 52% 48% 52% 48%;
+    transform: translate(-15px, -10px) scale(1.03, 0.98) rotate(2deg);
+  }
+}
+
+@keyframes fluidColorMorph4 {
+  0% {
+    border-radius: 45% 55% 60% 40% / 50% 50% 50% 50%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    border-radius: 60% 40% 40% 60% / 40% 60% 40% 60%;
+    transform: translate(25px, -20px) scale(1.05, 0.96) rotate(-3deg);
+  }
+  66% {
+    border-radius: 40% 60% 55% 45% / 60% 40% 60% 40%;
+    transform: translate(-20px, 25px) scale(0.96, 1.06) rotate(4deg);
+  }
+  100% {
+    border-radius: 52% 48% 45% 55% / 45% 55% 45% 55%;
+    transform: translate(10px, -15px) scale(1.02, 0.98) rotate(-1deg);
+  }
+}
+
+/* 玻璃卡片表面极缓沐光呼吸微波 (无平移，纯净通透光泽律动) */
+@keyframes slowGlassShimmer {
+  0% {
+    opacity: 0.99;
+  }
+  50% {
+    opacity: 0.94;
+  }
+  100% {
+    opacity: 0.99;
+  }
+}
+
+/* ==========================================================================
    APP SHELL LAYOUT (FLOATING GLASS DOCK & WORKSPACE)
    ========================================================================== */
 .app-shell {
+  position: relative;
   display: flex;
   min-height: 100vh;
   width: 100%;
   background: var(--bg-app-ambient);
   background-attachment: fixed;
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   overflow: hidden;
 }
 
 /* ==========================================================================
-   APPLE LIQUID GLASS SIDEBAR
+   APPLE LIQUID GLASS SIDEBAR (PRISMATIC COLOR GLASS WITH SLOW SHIMMER)
    ========================================================================== */
 .app-nav {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: var(--glass-sidebar);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  background: var(--liquid-nav-bg);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-float);
   border-radius: var(--radius-lg);
@@ -459,9 +664,9 @@ button:disabled {
 
 .app-header {
   height: var(--header-h);
-  background: var(--glass-header);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  background: var(--liquid-header-bg);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-glass);
   border-radius: var(--radius-lg);
@@ -472,6 +677,10 @@ button:disabled {
   justify-content: space-between;
   flex-shrink: 0;
   z-index: 25;
+}
+
+:root[data-theme="dark"] .app-header {
+  background: var(--liquid-header-bg);
 }
 
 .header-status-group {
@@ -952,15 +1161,21 @@ button:disabled {
 }
 
 /* ==========================================================================
-   APPLE LIQUID GLASS CARDS
+   APPLE LIQUID GLASS CARDS (PRISMATIC COLOR GLASS WITH SLOW SHIMMER)
    ========================================================================== */
 .card {
-  background: var(--glass-card);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  background: var(--liquid-card-bg);
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
+  box-shadow: 0 14px 40px rgba(30, 45, 80, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+:root[data-theme="dark"] .card {
+  background: var(--liquid-card-bg);
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), inset 0 1px 1px 0 rgba(56, 189, 248, 0.18);
 }
 
 .card-header {
@@ -1270,8 +1485,16 @@ button:disabled {
 .connection-state-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.state-left-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .state-label {
@@ -1285,10 +1508,77 @@ button:disabled {
 
 .state-msg {
   color: var(--text-muted);
-  max-width: 320px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.state-right-online {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.online-metric-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.tag-flame {
+  background: rgba(255, 51, 102, 0.1);
+  color: #ff3366;
+  border-color: rgba(255, 51, 102, 0.28);
+}
+
+.tag-flame .tag-icon {
+  color: #ff3366;
+  filter: drop-shadow(0 0 3px rgba(255, 51, 102, 0.45));
+}
+
+.tag-users {
+  background: rgba(56, 189, 248, 0.12);
+  color: #0284c7;
+  border-color: rgba(56, 189, 248, 0.32);
+}
+
+:root[data-theme="dark"] .tag-users {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.tag-watched {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.28);
+}
+
+/* Header Popularity Pill */
+.dynamic-pill.pill-popularity {
+  background: rgba(255, 240, 245, 0.85);
+  border-color: rgba(255, 102, 153, 0.35);
+  color: #ff3366;
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .dynamic-pill.pill-popularity {
+  background: rgba(40, 16, 28, 0.75);
+  border-color: rgba(255, 51, 102, 0.35);
+  color: #ff6699;
+}
+
+.status-icon-flame {
+  color: #ff3366;
+  filter: drop-shadow(0 0 4px rgba(255, 51, 102, 0.5));
 }
 
 /* Feed Main Card */
@@ -1463,20 +1753,45 @@ button:disabled {
 }
 
 .user-avatar-tag {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 102, 153, 0.12);
   display: grid;
   place-items: center;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 :root[data-theme="dark"] .user-avatar-tag {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(56, 189, 248, 0.15);
   color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Danmaku Emoticon (B站弹幕表情图片) */
+.danmaku-emoticon {
+  display: inline-block;
+  vertical-align: -6px;
+  height: 25px;
+  width: auto;
+  max-width: 48px;
+  margin: 0 3px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
 
 .sender-name {

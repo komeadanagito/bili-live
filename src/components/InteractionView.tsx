@@ -10,9 +10,13 @@ import {
   Lock,
   Unlock,
   Sparkles,
+  Flame,
+  Users,
+  Eye,
 } from 'lucide-react';
 import type { Account, ConnectionStatus, LiveMessage, MessageKind } from '../types';
 import { handleDragMouseDown } from '../bridge';
+import { renderMessageWithEmoticons } from '../emoticons';
 
 const KIND_LABELS: Record<MessageKind, string> = {
   danmaku: '弹幕',
@@ -165,13 +169,39 @@ export default function InteractionView({
         </div>
 
         <div className="connection-state-strip">
-          <span className={`signal-dot ${connection.state === 'connected' ? 'connected' : connection.state === 'error' ? 'danger' : ''}`} />
-          <span className="state-label">{STATE_LABELS[connection.state]}</span>
-          {connection.roomId && (
-            <span className="state-room font-mono">[ROOM: {connection.roomId}]</span>
-          )}
-          {connection.message && (
-            <span className="state-msg font-mono">• {connection.message}</span>
+          <div className="state-left-cluster">
+            <span className={`signal-dot ${connection.state === 'connected' ? 'connected' : connection.state === 'error' ? 'danger' : ''}`} />
+            <span className="state-label">{STATE_LABELS[connection.state]}</span>
+            {connection.roomId && (
+              <span className="state-room font-mono">[ROOM: {connection.roomId}]</span>
+            )}
+            {connection.message && (
+              <span className="state-msg font-mono">• {connection.message}</span>
+            )}
+          </div>
+
+          {/* 实时人气与在线人数信息 */}
+          {isConnected && (connection.popularity !== undefined && connection.popularity > 0 || connection.online !== undefined && connection.online > 0 || connection.watched) && (
+            <div className="state-right-online font-mono" data-no-drag>
+              {connection.popularity !== undefined && connection.popularity > 0 && (
+                <span className="online-metric-tag tag-flame" title="当前直播间人气值">
+                  <Flame size={12} className="tag-icon" />
+                  <span>人气 {connection.popularity >= 10000 ? `${(connection.popularity / 10000).toFixed(1)}万` : connection.popularity}</span>
+                </span>
+              )}
+              {connection.online !== undefined && connection.online > 0 && (
+                <span className="online-metric-tag tag-users" title="当前在线观众数">
+                  <Users size={12} className="tag-icon" />
+                  <span>在线 {connection.online}</span>
+                </span>
+              )}
+              {connection.watched && (
+                <span className="online-metric-tag tag-watched" title="累计观看人数">
+                  <Eye size={12} className="tag-icon" />
+                  <span>{connection.watched}</span>
+                </span>
+              )}
+            </div>
           )}
         </div>
       </section>
@@ -268,9 +298,21 @@ function MessageItem({ message }: { message: LiveMessage }) {
   return (
     <article className={`feed-item kind-${message.kind}`}>
       <div className="item-meta-bar">
-        {/* User avatar initial */}
+        {/* User Avatar (若有头像显示图片，否则优雅回退图标或首字母) */}
         <span className="user-avatar-tag">
-          {isGift ? (
+          {message.avatar ? (
+            <img
+              src={message.avatar}
+              alt={message.user}
+              className="user-avatar-img"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              onError={e => {
+                // 若个别头像加载异常，自动隐藏回退
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : isGift ? (
             <Gift size={12} />
           ) : isGuard ? (
             <ShieldCheck size={12} />
@@ -299,7 +341,9 @@ function MessageItem({ message }: { message: LiveMessage }) {
       </div>
 
       <div className="item-body">
-        <p className="item-text">{message.text}</p>
+        <p className="item-text">
+          {renderMessageWithEmoticons(message.text, message.emots)}
+        </p>
         {(message.amount !== undefined || message.quantity !== undefined) && (
           <div className="item-extra-info font-mono">
             {message.quantity !== undefined && <span>数量: {message.quantity}</span>}

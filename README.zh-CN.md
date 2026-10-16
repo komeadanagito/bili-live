@@ -15,7 +15,7 @@
   </p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/版本-v0.1.0-blue?style=flat-square" alt="版本" />
+    <img src="https://img.shields.io/badge/版本-v0.1.1-blue?style=flat-square" alt="版本" />
     <img src="https://img.shields.io/badge/平台-Windows%20x64-0078D6?style=flat-square" alt="平台" />
     <img src="https://img.shields.io/badge/协议-MIT-green?style=flat-square" alt="协议" />
   </p>
@@ -29,7 +29,10 @@
 > 为 B 站主播打造的原生桌面中控台。专注极简启动、超低内存开销与凭据安全管理。
 
 <div align="center">
-  <img src="docs/images/image.png" alt="Bili Live 控制台界面预览" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 16px 0 28px 0;" />
+  <p align="center"><b>🌙 深色模式</b></p>
+  <img src="docs/images/image-dark.png" alt="Bili Live 控制台深色模式预览" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 8px 0 24px 0;" />
+  <p align="center"><b>☀️ 浅色模式</b></p>
+  <img src="docs/images/image-light.png" alt="Bili Live 控制台浅色模式预览" width="880" style="border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); margin: 8px 0 24px 0;" />
 </div>
 
 ---
@@ -38,7 +41,7 @@
 
 - **快捷扫码登录** &mdash; 手机客户端一键扫码，凭据经 Windows 凭据管理器硬件级加密，磁盘不落明文 Cookie。
 - **直播推流中控** &mdash; 动态分区选择、一键开播与下播防误触，推流地址与密钥默认打码并支持一键复制到 OBS。
-- **实时弹幕互动** &mdash; 毫秒级接入普通弹幕、礼物、醒目留言（SC）、大航海舰长及互动通知，断网自动平滑重连。
+- **实时弹幕与高频表情** &mdash; 毫秒级接入普通弹幕，完美支持 B 站官方原生表情包图文混排渲染；覆盖礼物、醒目留言（SC）、大航海舰长及互动通知，断网自动平滑重连。
 - **下播数据复盘** &mdash; 终止直播后自动呈现真实直播时长、总观看、峰值在线、弹幕总数与金仓鼠流水明细。
 - **创新双模运行** &mdash; 既可作为极低资源占用的原生桌面客户端，也支持在任意现代浏览器中开启全功能开发调试。
 

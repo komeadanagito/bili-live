@@ -1,4 +1,4 @@
-use crate::models::{ConnectionStatus, LiveMessage, ServerEvent};
+use crate::models::{ConnectionStatus, LiveMessage, RoomOnlineInfo, ServerEvent};
 use tauri::Emitter;
 use tokio::sync::broadcast;
 
@@ -39,6 +39,21 @@ impl AppEventSink {
             AppEventSink::Dual { app, web } => {
                 let _ = app.emit("live-message", message.clone());
                 let _ = web.send(ServerEvent::LiveMessage(message));
+            }
+        }
+    }
+
+    pub fn emit_online(&self, online: RoomOnlineInfo) {
+        match self {
+            AppEventSink::Tauri(app) => {
+                let _ = app.emit("room-online", online);
+            }
+            AppEventSink::Web(tx) => {
+                let _ = tx.send(ServerEvent::RoomOnline(online));
+            }
+            AppEventSink::Dual { app, web } => {
+                let _ = app.emit("room-online", online.clone());
+                let _ = web.send(ServerEvent::RoomOnline(online));
             }
         }
     }

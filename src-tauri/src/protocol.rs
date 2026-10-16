@@ -36,7 +36,7 @@ pub fn packet(operation: u32, body: &[u8]) -> Vec<u8> {
 pub enum Incoming {
     Auth(i64),
     Command(Value),
-    Heartbeat,
+    Heartbeat(u64),
 }
 pub fn decode(bytes: &[u8]) -> Result<Vec<Incoming>> {
     let mut result = Vec::new();
@@ -77,7 +77,14 @@ fn decode_inner(
                     serde_json::from_slice(body).map_err(|_| "弹幕认证响应格式异常")?;
                 out.push(Incoming::Auth(value["code"].as_i64().unwrap_or(-1)));
             }
-            3 => out.push(Incoming::Heartbeat),
+            3 => {
+                let popularity = if body.len() >= 4 {
+                    u32::from_be_bytes(body[0..4].try_into().unwrap_or([0, 0, 0, 0])) as u64
+                } else {
+                    0
+                };
+                out.push(Incoming::Heartbeat(popularity));
+            }
             5 if version == 2 || version == 3 => {
                 let reader: Box<dyn Read + '_> = if version == 2 {
                     Box::new(flate2::read::ZlibDecoder::new(body))
@@ -143,6 +150,33 @@ fn interact_label(kind: u64) -> &'static str {
         _ => "参与了互动",
     }
 }
+pub fn extract_online_info(command: &Value) -> Option<(Option<u64>, Option<String>)> {
+    let cmd = command["cmd"]
+        .as_str()
+        .unwrap_or("")
+        .split(':')
+        .next()
+        .unwrap_or("");
+    let d = &command["data"];
+    match cmd {
+        "ONLINE_RANK_COUNT" => {
+            let count = number(&d["count"]);
+            Some((Some(count), None))
+        }
+        "WATCHED_CHANGE" => {
+            let watched = text(&d["text_large"]);
+            let watched_str = if watched.is_empty() {
+                let n = number(&d["num"]);
+                if n > 0 { Some(format!("累计观看 {n}")) } else { None }
+            } else {
+                Some(watched)
+            };
+            Some((None, watched_str))
+        }
+        _ => None,
+    }
+}
+
 pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
     let cmd = command["cmd"]
         .as_str()
@@ -157,7 +191,9 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
                 content: String,
                 amount: Option<f64>,
                 quantity: Option<u64>,
-                medal: Option<String>| LiveMessage {
+                medal: Option<String>,
+                avatar: Option<String>,
+                emots: Option<std::collections::HashMap<String, String>>| LiveMessage {
         id: format!("{}-{}", now(), SEQUENCE.fetch_add(1, Ordering::Relaxed)),
         room_id: room.into(),
         kind: kind.into(),
@@ -168,36 +204,89 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
         amount,
         quantity,
         medal,
+        avatar,
+        emots,
     };
     let event = match cmd {
         "DANMU_MSG" | "DANMU_MSG_MIRROR" => {
             let i = &command["info"];
             let medal = text(&i[3][1]);
+            let danmaku_text = text(&i[1]);
+
+            // 提取表情映射
+            let mut emots_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
+            // 单个表情包弹幕
+            if let Some(url) = i[0][13]["url"].as_str() {
+                if !url.is_empty() {
+                    emots_map.insert(danmaku_text.clone(), url.to_string());
+                }
+            }
+
+            // 从 extra 字符串解析用户头像和混合表情字典
+            let mut avatar: Option<String> = None;
+            let extra_str = i[0][15]["extra"].as_str().or_else(|| i[0][15].as_str());
+            if let Some(extra_s) = extra_str {
+                if let Ok(extra_val) = serde_json::from_str::<Value>(extra_s) {
+                    if let Some(face) = extra_val["user"]["base"]["face"].as_str() {
+                        if !face.is_empty() {
+                            avatar = Some(face.to_string());
+                        }
+                    }
+                    if let Some(emots_obj) = extra_val["emots"].as_object() {
+                        for (k, v) in emots_obj {
+                            if let Some(u) = v["url"].as_str() {
+                                if !u.is_empty() {
+                                    emots_map.insert(k.clone(), u.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 兜底头像
+            if avatar.is_none() {
+                let face = text(&i[0][15]["user"]["base"]["face"]);
+                if !face.is_empty() {
+                    avatar = Some(face);
+                }
+            }
+
             make(
                 "danmaku",
                 text(&i[2][1]),
                 text(&i[2][0]),
-                text(&i[1]),
+                danmaku_text,
                 None,
                 None,
                 (!medal.is_empty()).then_some(medal),
+                avatar,
+                (!emots_map.is_empty()).then_some(emots_map),
             )
         }
-        "SEND_GIFT" => make(
-            "gift",
-            text(&d["uname"]),
-            text(&d["uid"]),
-            format!("赠送 {} × {}", text(&d["giftName"]), number(&d["num"])),
-            (d["coin_type"] == "gold").then(|| number(&d["total_coin"]) as f64 / 1000.0),
-            Some(number(&d["num"])),
-            None,
-        ),
+        "SEND_GIFT" => {
+            let face = text(&d["face"]);
+            make(
+                "gift",
+                text(&d["uname"]),
+                text(&d["uid"]),
+                format!("赠送 {} × {}", text(&d["giftName"]), number(&d["num"])),
+                (d["coin_type"] == "gold").then(|| number(&d["total_coin"]) as f64 / 1000.0),
+                Some(number(&d["num"])),
+                None,
+                (!face.is_empty()).then_some(face),
+                None,
+            )
+        }
         "SEND_GIFT_V2" => {
             if let Some(proto) = d["pb"]
                 .as_str()
                 .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok())
                 .and_then(|bytes| GiftBroadcast::decode(bytes.as_slice()).ok())
             {
+                let face = text(&d["face"]);
+                let avatar = (!face.is_empty()).then_some(face);
                 return proto
                     .gifts
                     .iter()
@@ -209,6 +298,8 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
                             format!("赠送 {} × {}", g.name, g.num),
                             (g.coin_type == "gold").then_some(g.total_coin as f64 / 1000.0),
                             Some(g.num),
+                            None,
+                            avatar.clone(),
                             None,
                         )
                     })
@@ -225,6 +316,8 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
                 2 => "提督",
                 _ => "舰长",
             };
+            let f1 = text(&d["user_info"]["face"]);
+            let face = if !f1.is_empty() { f1 } else { text(&d["face"]) };
             make(
                 "guard",
                 text(&d["username"]),
@@ -233,22 +326,32 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
                 None,
                 Some(number(&d["num"])),
                 None,
+                (!face.is_empty()).then_some(face),
+                None,
             )
         }
-        "SUPER_CHAT_MESSAGE" => make(
-            "superchat",
-            text(&d["user_info"]["uname"]),
-            text(&d["uid"]),
-            text(&d["message"]),
-            Some(number(&d["price"]) as f64),
-            None,
-            None,
-        ),
+        "SUPER_CHAT_MESSAGE" => {
+            let f1 = text(&d["user_info"]["face"]);
+            let face = if !f1.is_empty() { f1 } else { text(&d["user_info"]["user_face"]) };
+            make(
+                "superchat",
+                text(&d["user_info"]["uname"]),
+                text(&d["uid"]),
+                text(&d["message"]),
+                Some(number(&d["price"]) as f64),
+                None,
+                None,
+                (!face.is_empty()).then_some(face),
+                None,
+            )
+        }
         "SUPER_CHAT_MESSAGE_DELETE" => make(
             "superchat-delete",
             "系统".into(),
             String::new(),
             format!("醒目留言已删除：{}", d["ids"]),
+            None,
+            None,
             None,
             None,
             None,
@@ -267,34 +370,50 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
                     None,
                     None,
                     None,
+                    None,
+                    None,
                 )
             } else {
                 return vec![];
             }
         }
-        "INTERACT_WORD" => make(
-            "interact",
-            text(&d["uname"]),
-            text(&d["uid"]),
-            interact_label(number(&d["msg_type"])).into(),
-            None,
-            None,
-            None,
-        ),
-        "LIKE_INFO_V3_CLICK" => make(
-            "interact",
-            text(&d["uname"]),
-            text(&d["uid"]),
-            "为主播点赞".into(),
-            None,
-            None,
-            None,
-        ),
+        "INTERACT_WORD" => {
+            let f1 = text(&d["face"]);
+            let face = if !f1.is_empty() { f1 } else { text(&d["uinfo"]["base"]["face"]) };
+            make(
+                "interact",
+                text(&d["uname"]),
+                text(&d["uid"]),
+                interact_label(number(&d["msg_type"])).into(),
+                None,
+                None,
+                None,
+                (!face.is_empty()).then_some(face),
+                None,
+            )
+        }
+        "LIKE_INFO_V3_CLICK" => {
+            let f1 = text(&d["face"]);
+            let face = if !f1.is_empty() { f1 } else { text(&d["uinfo"]["base"]["face"]) };
+            make(
+                "interact",
+                text(&d["uname"]),
+                text(&d["uid"]),
+                "为主播点赞".into(),
+                None,
+                None,
+                None,
+                (!face.is_empty()).then_some(face),
+                None,
+            )
+        }
         "LIVE" => make(
             "notice",
             "系统".into(),
             String::new(),
             "直播间已开播".into(),
+            None,
+            None,
             None,
             None,
             None,
@@ -307,12 +426,16 @@ pub fn messages(room: &str, command: &Value) -> Vec<LiveMessage> {
             None,
             None,
             None,
+            None,
+            None,
         ),
         "WATCHED_CHANGE" => make(
             "notice",
             "系统".into(),
             String::new(),
             format!("累计观看：{}", number(&d["num"])),
+            None,
+            None,
             None,
             None,
             None,
