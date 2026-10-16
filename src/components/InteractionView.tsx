@@ -10,10 +10,8 @@ import {
   Lock,
   Unlock,
   Sparkles,
-  Flame,
-  Users,
-  Eye,
 } from 'lucide-react';
+import MetricCapsule, { formatMetricNumber } from './MetricCapsule';
 import type { Account, ConnectionStatus, LiveMessage, MessageKind } from '../types';
 import { handleDragMouseDown } from '../bridge';
 import { renderMessageWithEmoticons } from '../emoticons';
@@ -26,14 +24,6 @@ const KIND_LABELS: Record<MessageKind, string> = {
   'superchat-delete': '留言删除',
   interact: '互动',
   notice: '通知',
-};
-
-const STATE_LABELS: Record<ConnectionStatus['state'], string> = {
-  connecting: '正在建立连接…',
-  connected: '弹幕长链接正常',
-  reconnecting: '正在尝试重连…',
-  disconnected: '未建立连接',
-  error: '长链接异常',
 };
 
 interface Props {
@@ -169,40 +159,43 @@ export default function InteractionView({
         </div>
 
         <div className="connection-state-strip">
-          <div className="state-left-cluster">
-            <span className={`signal-dot ${connection.state === 'connected' ? 'connected' : connection.state === 'error' ? 'danger' : ''}`} />
-            <span className="state-label">{STATE_LABELS[connection.state]}</span>
-            {connection.roomId && (
-              <span className="state-room font-mono">[ROOM: {connection.roomId}]</span>
-            )}
-            {connection.message && (
-              <span className="state-msg font-mono">• {connection.message}</span>
+          <div className="state-right-online" data-no-drag>
+            {/* 纯净呼吸绿豆指示灯 (无外框、无文字提示、纯自然呼吸) */}
+            <span
+              className={`signal-dot-standalone ${connection.state === 'connected' ? 'connected' : connection.state === 'error' ? 'danger' : ''}`}
+            />
+
+            {/* 实时人气、在线与观看人数指标 (字体样式与前面按钮严格对齐) */}
+            {isConnected && (
+              <>
+                <MetricCapsule
+                  type="flame"
+                  label="人气"
+                  value={formatMetricNumber(connection.popularity ?? 0)}
+                />
+                <MetricCapsule
+                  type="online"
+                  label="在线"
+                  value={formatMetricNumber(connection.online ?? 0)}
+                />
+                {(() => {
+                  const rawWatched = connection.watched?.trim();
+                  let val = '0';
+                  if (rawWatched) {
+                    const match = rawWatched.match(/^([\d\.]+[万kKmMbB]?)/);
+                    val = match ? match[1] : rawWatched;
+                  }
+                  return (
+                    <MetricCapsule
+                      type="watched"
+                      label="看过"
+                      value={val}
+                    />
+                  );
+                })()}
+              </>
             )}
           </div>
-
-          {/* 实时人气与在线人数信息 */}
-          {isConnected && (connection.popularity !== undefined && connection.popularity > 0 || connection.online !== undefined && connection.online > 0 || connection.watched) && (
-            <div className="state-right-online font-mono" data-no-drag>
-              {connection.popularity !== undefined && connection.popularity > 0 && (
-                <span className="online-metric-tag tag-flame" title="当前直播间人气值">
-                  <Flame size={12} className="tag-icon" />
-                  <span>人气 {connection.popularity >= 10000 ? `${(connection.popularity / 10000).toFixed(1)}万` : connection.popularity}</span>
-                </span>
-              )}
-              {connection.online !== undefined && connection.online > 0 && (
-                <span className="online-metric-tag tag-users" title="当前在线观众数">
-                  <Users size={12} className="tag-icon" />
-                  <span>在线 {connection.online}</span>
-                </span>
-              )}
-              {connection.watched && (
-                <span className="online-metric-tag tag-watched" title="累计观看人数">
-                  <Eye size={12} className="tag-icon" />
-                  <span>{connection.watched}</span>
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </section>
 
