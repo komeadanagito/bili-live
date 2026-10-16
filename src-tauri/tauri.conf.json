@@ -10,10 +10,32 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "title": "Bili Live · 直播控制台", "width": 1320, "height": 900, "minWidth": 980, "minHeight": 680 }],
+    "windows": [
+      {
+        "label": "main",
+        "title": "Bili Live · 直播控制台",
+        "width": 1320,
+        "height": 900,
+        "minWidth": 980,
+        "minHeight": 680,
+        "decorations": false,
+        "transparent": true,
+        "shadow": true
+      }
+    ],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.hdslb.com https://*.bilibili.com; connect-src ipc: http://ipc.localhost; font-src 'self'; object-src 'none'; frame-src 'none'"
     }
   },
-  "bundle": { "active": true, "targets": ["nsis"], "icon": ["icons/icon.ico"] }
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
 }

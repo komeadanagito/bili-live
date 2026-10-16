@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#101622"/><rect x="40" y="60" width="176" height="140" rx="28" fill="#27d6c5"/><path d="M85 39l25 25m60-25l-25 25" stroke="#27d6c5" stroke-width="14" stroke-linecap="round"/><path d="M103 100v62l56-31z" fill="#101622"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- 顶部天线 -->
+  <path d="M190 144L128 66" stroke="#ff6699" stroke-width="34" stroke-linecap="round"/>
+  <path d="M322 144L384 66" stroke="#ff6699" stroke-width="34" stroke-linecap="round"/>
+
+  <!-- 电视机超圆角萌系机身 -->
+  <rect x="66" y="134" width="380" height="272" rx="102" stroke="#ff6699" stroke-width="34"/>
+
+  <!-- 眼睛 -->
+  <circle cx="195" cy="246" r="27" fill="#ff6699"/>
+  <circle cx="317" cy="246" r="27" fill="#ff6699"/>
+
+  <!-- 微笑小嘴 -->
+  <path d="M232 304C241 327 271 327 280 304" stroke="#ff6699" stroke-width="25" stroke-linecap="round"/>
+
+  <!-- 支撑短脚 -->
+  <path d="M158 400L132 458" stroke="#ff6699" stroke-width="34" stroke-linecap="round"/>
+  <path d="M354 400L380 458" stroke="#ff6699" stroke-width="34" stroke-linecap="round"/>
+</svg>

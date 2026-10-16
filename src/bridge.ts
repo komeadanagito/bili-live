@@ -161,3 +161,48 @@ export async function copyText(text: string): Promise<void> {
   document.execCommand('copy');
   document.body.removeChild(el);
 }
+
+export async function minimizeWindow(): Promise<void> {
+  if (isDesktop) {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().minimize();
+  }
+}
+
+export async function toggleMaximizeWindow(): Promise<void> {
+  if (isDesktop) {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().toggleMaximize();
+  }
+}
+
+export async function closeWindow(): Promise<void> {
+  if (isDesktop) {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().close();
+  }
+}
+
+export async function startDragging(): Promise<void> {
+  if (isDesktop) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().startDragging();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function handleDragMouseDown(e: React.MouseEvent): void {
+  // Only trigger on left click and not on interactive controls
+  if (e.button === 0 && !(e.target as HTMLElement).closest('button, input, a, select, textarea, [data-no-drag]')) {
+    void startDragging();
+  }
+}
+
+export function handleDragDoubleClick(e: React.MouseEvent): void {
+  if (!(e.target as HTMLElement).closest('button, input, a, select, textarea, [data-no-drag]')) {
+    void toggleMaximizeWindow();
+  }
+}

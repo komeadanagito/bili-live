@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { Account, ConnectionStatus, LiveMessage, MessageKind } from '../types';
+import { handleDragMouseDown } from '../bridge';
 
 const KIND_LABELS: Record<MessageKind, string> = {
   danmaku: '弹幕',
@@ -110,9 +111,13 @@ export default function InteractionView({
 
   return (
     <div className="view-container interaction-view">
-      {/* Top Deck: Connection Control */}
-      <section className="interaction-deck-top card">
-        <div className="deck-col-inputs">
+      {/* Top Deck: Connection Control (空白处支持拖动窗口) */}
+      <section
+        className="interaction-deck-top card"
+        data-tauri-drag-region
+        onMouseDown={handleDragMouseDown}
+      >
+        <div className="deck-col-inputs" data-no-drag>
           <div className="input-group">
             <span className="input-prefix">直播间</span>
             <input

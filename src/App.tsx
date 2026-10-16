@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { copyText, invoke, listen } from './bridge';
+import { copyText, invoke, listen, handleDragMouseDown, handleDragDoubleClick } from './bridge';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import Navigation, { type TabKey } from './components/Navigation';
 import Header from './components/Header';
@@ -329,6 +329,14 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {/* Invisible Global Top Edge Drag Bar */}
+      <div
+        className="app-window-drag-strip"
+        data-tauri-drag-region
+        onMouseDown={handleDragMouseDown}
+        onDoubleClick={handleDragDoubleClick}
+      />
+
       {/* Minimal Left Sidebar Navigation */}
       <Navigation
         activeTab={activeTab}

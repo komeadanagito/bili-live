@@ -72,6 +72,28 @@ pub fn run() {
             let core = core::AppCore::new().map_err(std::io::Error::other)?;
             let sink = events::AppEventSink::Tauri(app.handle().clone());
             app.manage(AppState { core, sink });
+
+            // 强制将窗口与任务栏图标设为粉色小电视 (同步立即设置 + 异步延时再次确认覆盖)
+            let icon_bytes = include_bytes!("../icons/128x128.png");
+            if let Ok(img) = image::load_from_memory(icon_bytes) {
+                let rgba = img.to_rgba8();
+                let (width, height) = rgba.dimensions();
+                let icon_data = rgba.into_raw();
+                let icon = tauri::image::Image::new_owned(icon_data.clone(), width, height);
+                for (_, win) in app.webview_windows() {
+                    let _ = win.set_icon(icon.clone());
+                }
+
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                    if let Some(win) = handle.get_webview_window("main") {
+                        let icon_retry = tauri::image::Image::new_owned(icon_data, width, height);
+                        let _ = win.set_icon(icon_retry);
+                    }
+                });
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

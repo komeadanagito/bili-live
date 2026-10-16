@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { LogIn, RefreshCw, Wifi, WifiOff, LogOut, Sun, Moon, Radio } from 'lucide-react';
+import { LogIn, RefreshCw, Wifi, WifiOff, LogOut, Sun, Moon, Radio, Minus, Square, X } from 'lucide-react';
 import type { Account, ConnectionStatus, Theme } from '../types';
+import {
+  isDesktop,
+  minimizeWindow,
+  toggleMaximizeWindow,
+  closeWindow,
+  handleDragMouseDown,
+  handleDragDoubleClick,
+} from '../bridge';
 
 interface Props {
   account: Account | null;
@@ -40,8 +48,13 @@ export default function Header({
   }[connection.state];
 
   return (
-    <header className="app-header">
-      <div className="header-status-group">
+    <header
+      className="app-header"
+      data-tauri-drag-region
+      onMouseDown={handleDragMouseDown}
+      onDoubleClick={handleDragDoubleClick}
+    >
+      <div className="header-status-group" data-tauri-drag-region>
         {/* Dynamic Live Broadcast Pill */}
         <DynamicStatusPill
           triggerKey={live}
@@ -134,6 +147,36 @@ export default function Header({
             <LogIn size={15} />
             <span>{loading ? '加载中…' : '扫码登录'}</span>
           </button>
+        )}
+
+        {/* Desktop Frameless Window Controls */}
+        {isDesktop && (
+          <div className="window-controls-cluster">
+            <button
+              type="button"
+              className="win-btn win-btn-min"
+              onClick={minimizeWindow}
+              aria-label="最小化窗口"
+            >
+              <Minus size={13} />
+            </button>
+            <button
+              type="button"
+              className="win-btn win-btn-max"
+              onClick={toggleMaximizeWindow}
+              aria-label="最大化/还原窗口"
+            >
+              <Square size={11} />
+            </button>
+            <button
+              type="button"
+              className="win-btn win-btn-close"
+              onClick={closeWindow}
+              aria-label="关闭窗口"
+            >
+              <X size={13} />
+            </button>
+          </div>
         )}
       </div>
     </header>
