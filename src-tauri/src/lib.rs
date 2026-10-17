@@ -224,6 +224,79 @@ async fn set_overlay_pinned(app: tauri::AppHandle, pinned: bool) -> std::result:
         });
     }
 
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Linux / macOS 分支：使用 Tauri 跨平台光标位置 API 实现与 Windows 相同的"热区解锁"。
+        // X11 下可读取全局光标坐标；Wayland 因安全限制只能返回占位值 (0,0)，
+        // 此时连续多次读到占位值即判定为不可用并退出轮询，窗口保持纯穿透（仍可从主窗口关闭悬浮窗）。
+        let win_clone = win.clone();
+        tauri::async_runtime::spawn(async move {
+            let mut is_ignoring = true;
+            let mut unavailable_streak = 0u32;
+
+            while OVERLAY_PINNED.load(Ordering::SeqCst) {
+                let Ok(is_visible) = win_clone.is_visible() else {
+                    break;
+                };
+                if !is_visible {
+                    break;
+                }
+
+                let mut usable = false;
+                if let Ok(cursor) = win_clone.cursor_position() {
+                    let mx = cursor.x as i32;
+                    let my = cursor.y as i32;
+
+                    // (0,0) 是 Wayland 下的占位返回值，视为读取失败
+                    if mx != 0 || my != 0 {
+                        usable = true;
+                        let pos = win_clone.outer_position().unwrap_or_default();
+                        let size = win_clone.outer_size().unwrap_or_default();
+                        let scale = win_clone.scale_factor().unwrap_or(1.0);
+
+                        // 右上角图钉按钮物理屏幕热区 (宽约 54px，高约 44px)
+                        let btn_w = (54.0 * scale) as i32;
+                        let btn_h = (44.0 * scale) as i32;
+
+                        let pin_x_min = pos.x + size.width as i32 - btn_w;
+                        let pin_x_max = pos.x + size.width as i32;
+                        let pin_y_min = pos.y;
+                        let pin_y_max = pos.y + btn_h;
+
+                        let in_pin_btn =
+                            mx >= pin_x_min && mx <= pin_x_max && my >= pin_y_min && my <= pin_y_max;
+
+                        if in_pin_btn {
+                            // 鼠标位于图钉区域：解除穿透，允许点击图钉解锁移动
+                            if is_ignoring {
+                                let _ = win_clone.set_ignore_cursor_events(false);
+                                is_ignoring = false;
+                            }
+                        } else if !is_ignoring && OVERLAY_PINNED.load(Ordering::SeqCst) {
+                            // 鼠标位于其它区域：保持穿透，支持操作悬浮窗背后的内容
+                            let _ = win_clone.set_ignore_cursor_events(true);
+                            is_ignoring = true;
+                        }
+                    }
+                }
+
+                if usable {
+                    unavailable_streak = 0;
+                } else {
+                    unavailable_streak += 1;
+                    // 连续 20 次（约 0.6 秒）读不到有效坐标，判定该平台不支持全局光标查询，停止轮询
+                    if unavailable_streak >= 20 {
+                        break;
+                    }
+                }
+
+                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+            }
+
+            let _ = win_clone.set_ignore_cursor_events(false);
+        });
+    }
+
     Ok(())
 }
 
@@ -281,9 +354,18 @@ async fn open_external_url(url: String) -> std::result::Result<(), String> {
             .map_err(|e| e.to_string())?;
         Ok(())
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
     {
         let _ = std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        // Linux 桌面使用 xdg-open 调用系统默认浏览器
+        let _ = std::process::Command::new("xdg-open")
             .arg(&url)
             .spawn()
             .map_err(|e| e.to_string())?;

@@ -73,6 +73,45 @@ fn is_newer_version(latest: &str, current: &str) -> bool {
     l.len() > c.len()
 }
 
+/// 各平台默认安装包文件名（当 Release 未附对应资源时用作兜底命名）
+#[cfg(target_os = "windows")]
+const DEFAULT_ASSET_NAME: &str = "bili_live_setup_latest.exe";
+#[cfg(target_os = "macos")]
+const DEFAULT_ASSET_NAME: &str = "bili_live_latest.dmg";
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+const DEFAULT_ASSET_NAME: &str = "bili_live_latest.AppImage";
+
+/// 按当前平台从 Release 资源中挑选安装包
+///
+/// - Windows：优先含 setup 的 .exe，其次任意 .exe
+/// - macOS：.dmg
+/// - Linux：优先 AppImage（免安装、可原地升级），其次 .deb，再次 .rpm
+#[cfg(target_os = "windows")]
+fn pick_asset(assets: &[GithubReleaseAsset]) -> Option<&GithubReleaseAsset> {
+    let lower = |a: &GithubReleaseAsset| a.name.to_lowercase();
+    assets
+        .iter()
+        .find(|a| lower(a).ends_with(".exe") && lower(a).contains("setup"))
+        .or_else(|| assets.iter().find(|a| lower(a).ends_with(".exe")))
+}
+
+#[cfg(target_os = "macos")]
+fn pick_asset(assets: &[GithubReleaseAsset]) -> Option<&GithubReleaseAsset> {
+    assets
+        .iter()
+        .find(|a| a.name.to_lowercase().ends_with(".dmg"))
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn pick_asset(assets: &[GithubReleaseAsset]) -> Option<&GithubReleaseAsset> {
+    let lower = |a: &GithubReleaseAsset| a.name.to_lowercase();
+    assets
+        .iter()
+        .find(|a| lower(a).ends_with(".appimage"))
+        .or_else(|| assets.iter().find(|a| lower(a).ends_with(".deb")))
+        .or_else(|| assets.iter().find(|a| lower(a).ends_with(".rpm")))
+}
+
 pub async fn check_update(current_version: &str) -> Result<UpdateCheckResult, String> {
     let url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
 
@@ -121,12 +160,8 @@ pub async fn check_update(current_version: &str) -> Result<UpdateCheckResult, St
     let latest_ver = release.tag_name.trim().trim_start_matches(|c| c == 'v' || c == 'V').to_string();
     let has_update = is_newer_version(&latest_ver, current_version);
 
-    // 寻找 exe 格式的安装文件 (优先选择包含 setup 或 x64 的)
-    let exe_asset = release
-        .assets
-        .iter()
-        .find(|a| a.name.to_lowercase().ends_with(".exe") && a.name.to_lowercase().contains("setup"))
-        .or_else(|| release.assets.iter().find(|a| a.name.to_lowercase().ends_with(".exe")));
+    // 按当前平台挑选安装包资源（Windows 用 setup.exe / Linux 用 AppImage 或 deb / macOS 用 dmg）
+    let asset = pick_asset(&release.assets);
 
     Ok(UpdateCheckResult {
         current_version: current_version.to_string(),
@@ -134,9 +169,9 @@ pub async fn check_update(current_version: &str) -> Result<UpdateCheckResult, St
         has_update,
         release_name: release.name.unwrap_or_else(|| release.tag_name.clone()),
         release_notes: release.body.unwrap_or_default(),
-        download_url: exe_asset.map(|a| a.browser_download_url.clone()),
-        asset_name: exe_asset.map(|a| a.name.clone()),
-        asset_size: exe_asset.map(|a| a.size),
+        download_url: asset.map(|a| a.browser_download_url.clone()),
+        asset_name: asset.map(|a| a.name.clone()),
+        asset_size: asset.map(|a| a.size),
         release_url: release.html_url,
     })
 }
@@ -165,7 +200,7 @@ pub async fn download_and_install_update(
     }
 
     let total = res.content_length().unwrap_or(0);
-    let filename = asset_name.unwrap_or_else(|| "bili_live_setup_latest.exe".to_string());
+    let filename = asset_name.unwrap_or_else(|| DEFAULT_ASSET_NAME.to_string());
     let temp_path: PathBuf = std::env::temp_dir().join(&filename);
 
     let mut file = tokio::fs::File::create(&temp_path)
@@ -219,7 +254,7 @@ pub async fn download_and_install_update(
         },
     );
 
-    // 调起安装程序并退出当前程序
+    // 调起安装程序并退出当前程序（Windows：直接运行 NSIS 安装包）
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new(&temp_path)
@@ -234,8 +269,92 @@ pub async fn download_and_install_update(
         Ok(())
     }
 
-    #[cfg(not(target_os = "windows"))]
+    // macOS：打开 dmg 由用户拖拽安装
+    #[cfg(target_os = "macos")]
     {
-        Err(format!("已下载到: {}，请手动打开安装", temp_path.display()))
+        std::process::Command::new("open")
+            .arg(&temp_path)
+            .spawn()
+            .map_err(|e| format!("打开安装包失败: {e}"))?;
+        Ok(())
+    }
+
+    // Linux：AppImage 支持原地覆盖升级，deb / rpm 交给系统默认处理程序
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        install_linux_update(&app, &temp_path, &filename)
+    }
+}
+
+/// 用新文件替换目标文件：优先原子重命名，跨文件系统（如 /tmp 为 tmpfs）时回退为复制后删除
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn replace_file(source: &std::path::Path, target: &std::path::Path) -> std::io::Result<()> {
+    match std::fs::rename(source, target) {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            std::fs::copy(source, target)?;
+            let _ = std::fs::remove_file(source);
+            Ok(())
+        }
+    }
+}
+
+/// Linux 安装流程
+///
+/// 1. 若下载的是 AppImage：补上可执行权限；当程序本身以 AppImage 方式运行（存在 `$APPIMAGE`）时，
+///    直接把新文件覆盖到旧文件上并重启，实现"一键原地升级"。
+/// 2. 其余情况（deb / rpm 等）：调用 `xdg-open` 交由系统软件中心或包管理器处理。
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn install_linux_update(
+    app: &AppHandle,
+    downloaded: &std::path::Path,
+    filename: &str,
+) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let is_appimage = filename.to_lowercase().ends_with(".appimage");
+
+    if is_appimage {
+        if let Ok(meta) = std::fs::metadata(downloaded) {
+            let mut perm = meta.permissions();
+            perm.set_mode(0o755);
+            let _ = std::fs::set_permissions(downloaded, perm);
+        }
+
+        // 当前正以 AppImage 运行：覆盖旧文件后重启，自动切换到新版本
+        if let Ok(current) = std::env::var("APPIMAGE") {
+            if !current.is_empty() {
+                let target = PathBuf::from(&current);
+                if let Err(e) = replace_file(downloaded, &target) {
+                    return Err(format!(
+                        "覆盖旧版本失败（{e}），新版本已保存到 {}，请手动替换",
+                        downloaded.display()
+                    ));
+                }
+
+                let app_handle = app.clone();
+                let restart_path = target.clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = std::process::Command::new(&restart_path).spawn();
+                    tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+                    app_handle.exit(0);
+                });
+                return Ok(());
+            }
+        }
+    }
+
+    let opened = std::process::Command::new("xdg-open")
+        .arg(downloaded)
+        .spawn()
+        .is_ok();
+
+    if opened {
+        Ok(())
+    } else {
+        Err(format!(
+            "新版本已下载到 {}，请手动安装（未检测到 xdg-open）",
+            downloaded.display()
+        ))
     }
 }

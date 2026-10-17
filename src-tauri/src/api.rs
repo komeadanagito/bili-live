@@ -369,7 +369,7 @@ pub fn load_credentials() -> Result<Option<Credentials>> {
             "本地登录凭据损坏，请从系统凭据管理器删除 com.bililive.desktop 后重试".into()
         }),
         Err(keyring::Error::NoEntry) => Ok(None),
-        Err(_) => Err("无法读取系统保存的登录凭据".into()),
+        Err(err) => Err(format!("无法读取系统保存的登录凭据: {err}").into()),
     }
 }
 pub fn save_credentials(creds: &Credentials) -> Result<()> {

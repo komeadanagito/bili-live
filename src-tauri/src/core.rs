@@ -22,7 +22,12 @@ impl AppCore {
     pub fn new() -> Result<Self> {
         Ok(Self {
             api: Arc::new(api::Api::new()?),
-            credentials: Arc::new(RwLock::new(api::load_credentials()?)),
+            // 凭据读取失败时不阻塞启动：例如 Linux 上未运行 Secret Service（GNOME Keyring / KWallet）时，
+            // 系统凭据库不可用会导致读取报错，此时按"未登录"处理，用户重新扫码即可继续使用。
+            credentials: Arc::new(RwLock::new(api::load_credentials().unwrap_or_else(|err| {
+                eprintln!("[bili-live] 读取本地登录凭据失败，按未登录状态启动: {err}");
+                None
+            }))),
             qr: Arc::new(Mutex::new(None)),
             control: Arc::new(Mutex::new(())),
             live_key: Arc::new(Mutex::new(None)),
@@ -77,7 +82,11 @@ impl AppCore {
         let mut account = None;
         if let Some(creds) = credentials {
             account = Some(self.api.account(&creds).await?);
-            api::save_credentials(&creds)?;
+            // 凭据持久化失败不阻断登录：例如 Linux 无可用密钥环时，仍允许本次会话正常使用，
+            // 仅在标准错误输出提示，用户下次启动需重新扫码。
+            if let Err(err) = api::save_credentials(&creds) {
+                eprintln!("[bili-live] 登录凭据无法写入系统凭据库，本次登录不会持久化: {err}");
+            }
             if let Some(task) = self.connection.lock().await.take() {
                 task.stop().await;
             }
@@ -95,7 +104,11 @@ impl AppCore {
         if self.live_key.lock().await.is_some() {
             return Err("请先停止本应用开启的直播，再退出账号".into());
         }
-        api::delete_credentials()?;
+        // 系统凭据库不可用时也允许退出登录：内存中的登录态照常清空，
+        // 仅无法删除已持久化的凭据（此时通常本就不存在可删除的记录）。
+        if let Err(err) = api::delete_credentials() {
+            eprintln!("[bili-live] 清除系统凭据库记录失败: {err}");
+        }
         if let Some(task) = self.connection.lock().await.take() {
             task.stop().await;
         }
