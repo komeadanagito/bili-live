@@ -6,7 +6,6 @@ import {
   minimizeWindow,
   toggleMaximizeWindow,
   closeWindow,
-  handleDragMouseDown,
   handleDragDoubleClick,
 } from '../bridge';
 
@@ -48,13 +47,8 @@ export default function Header({
   }[connection.state];
 
   return (
-    <header
-      className="app-header"
-      data-tauri-drag-region
-      onMouseDown={handleDragMouseDown}
-      onDoubleClick={handleDragDoubleClick}
-    >
-      <div className="header-status-group" data-tauri-drag-region>
+    <header className="app-header">
+      <div className="header-status-group">
         {/* Dynamic Live Broadcast Pill */}
         <DynamicStatusPill
           triggerKey={live}
@@ -87,6 +81,13 @@ export default function Header({
           text={connectionText}
         />
       </div>
+
+      {/* 顶部中间大面积通透拖拽区 (专供拖拽与双击最大化，与左右两侧按键彻底隔离) */}
+      <div
+        className="header-drag-spacer"
+        data-tauri-drag-region
+        onDoubleClick={handleDragDoubleClick}
+      />
 
       <div className="header-right">
         {/* Theme Toggle Button - Pure Liquid Glass Circle */}

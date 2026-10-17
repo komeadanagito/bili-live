@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import {
   User,
   RefreshCw,
@@ -8,8 +9,21 @@ import {
   LogIn,
   Sun,
   Moon,
+  Download,
+  ExternalLink,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import type { Account, ConnectionStatus, Theme } from '../types';
+import {
+  getAppVersion,
+  checkAppUpdate,
+  downloadAndInstallUpdate,
+  onUpdateProgress,
+  openExternalUrl,
+  type UpdateCheckResult,
+  type UpdateProgress,
+} from '../bridge';
 
 interface Props {
   account: Account | null;
@@ -24,6 +38,8 @@ interface Props {
   onOpenLogin: () => void;
   onRefreshAccount: () => void;
   onLogoutConfirm: () => void;
+  onNotify?: (msg: string) => void;
+  onError?: (msg: string) => void;
 }
 
 export default function AccountView({
@@ -39,7 +55,77 @@ export default function AccountView({
   onOpenLogin,
   onRefreshAccount,
   onLogoutConfirm,
+  onNotify,
+  onError,
 }: Props) {
+  const [currentVersion, setCurrentVersion] = useState('0.1.2');
+  const [checking, setChecking] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<UpdateProgress | null>(null);
+
+  useEffect(() => {
+    getAppVersion().then(v => {
+      if (v) setCurrentVersion(v);
+    }).catch(() => {});
+  }, []);
+
+  const handleCheckUpdate = useCallback(async () => {
+    if (checking || downloading) return;
+    setChecking(true);
+    onNotify?.('正在检查是否有新版本...');
+    try {
+      const res = await checkAppUpdate();
+      setUpdateInfo(res);
+      if (res.has_update) {
+        onNotify?.(`发现新版本 v${res.latest_version}，可立即更新安装。`);
+      } else {
+        onNotify?.(`当前已是最新版本 (v${res.latest_version || currentVersion})。`);
+      }
+    } catch (err: any) {
+      onError?.(err?.message || '检查更新失败，请稍后重试。');
+    } finally {
+      setChecking(false);
+    }
+  }, [checking, downloading, currentVersion, onNotify, onError]);
+
+  const handleInstallUpdate = useCallback(async () => {
+    if (!updateInfo) return;
+    if (!updateInfo.download_url) {
+      if (updateInfo.release_url) {
+        await openExternalUrl(updateInfo.release_url);
+      }
+      return;
+    }
+
+    setDownloading(true);
+    setDownloadProgress({
+      downloaded: 0,
+      total: updateInfo.asset_size || 0,
+      percent: 0,
+      finished: false,
+    });
+    onNotify?.('开始下载新版本安装包，请稍候...');
+
+    let unlisten: (() => void) | undefined;
+    try {
+      unlisten = await onUpdateProgress((progress) => {
+        setDownloadProgress(progress);
+        if (progress.finished) {
+          onNotify?.('新版本安装包已下载完成，正在启动安装向导...');
+        }
+      });
+
+      await downloadAndInstallUpdate(updateInfo.download_url, updateInfo.asset_name);
+    } catch (err: any) {
+      onError?.(err?.message || '下载安装包失败，请尝试在浏览器手动下载。');
+      setDownloading(false);
+    } finally {
+      if (unlisten) {
+        unlisten();
+      }
+    }
+  }, [updateInfo, onNotify, onError]);
   return (
     <div className="view-container account-view">
       <div className="account-grid">
@@ -214,9 +300,102 @@ export default function AccountView({
             </div>
           </section>
 
-          {/* Version Note */}
-          <div className="account-version-badge">
-            <span>Bili Live Studio • v0.1.0-alpha</span>
+          {/* Version and Update Control */}
+          <div className="account-version-card">
+            <div className="version-card-main">
+              <div className="version-info-left">
+                <span className="version-name">Bili Live Studio</span>
+                <span className="version-pill">v{currentVersion}</span>
+                {updateInfo?.has_update && (
+                  <span className="version-new-badge">
+                    <Sparkles size={11} />
+                    <span>发现新版本 v{updateInfo.latest_version}</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="version-actions-right">
+                <button
+                  type="button"
+                  className={`btn-check-update ${checking ? 'is-checking' : ''}`}
+                  onClick={handleCheckUpdate}
+                  disabled={checking || downloading}
+                  title="刷新检测最新版本"
+                >
+                  <RefreshCw size={12} className={checking ? 'spin-anim' : ''} />
+                  <span>{checking ? '检查中...' : '检查更新'}</span>
+                </button>
+
+                {updateInfo?.release_url && (
+                  <button
+                    type="button"
+                    className="btn-version-link"
+                    onClick={() => openExternalUrl(updateInfo.release_url)}
+                    title="在 GitHub 打开 Release 页面"
+                  >
+                    <ExternalLink size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 新版本详情与一键安装卡片 */}
+            {updateInfo?.has_update && !downloading && (
+              <div className="version-update-panel">
+                <div className="version-update-header">
+                  <div className="version-update-meta">
+                    <strong>{updateInfo.release_name || `版本更新 v${updateInfo.latest_version}`}</strong>
+                    {updateInfo.asset_size && (
+                      <span className="version-asset-size">
+                        {(updateInfo.asset_size / (1024 * 1024)).toFixed(1)} MB
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-install-update"
+                    onClick={handleInstallUpdate}
+                  >
+                    <Download size={13} />
+                    <span>立即更新并安装</span>
+                  </button>
+                </div>
+
+                {updateInfo.release_notes ? (
+                  <div className="version-notes-box">
+                    <div className="version-notes-title">更新说明：</div>
+                    <div className="version-notes-text">{updateInfo.release_notes}</div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            {/* 下载进度面板 */}
+            {downloading && (
+              <div className="version-download-panel">
+                <div className="download-status-row">
+                  <div className="download-status-title">
+                    <Loader2 size={13} className="spin-anim" />
+                    <span>
+                      {downloadProgress?.finished
+                        ? '下载完成，正在启动安装向导...'
+                        : `正在下载安装包... ${(downloadProgress?.percent ?? 0).toFixed(1)}%`}
+                    </span>
+                  </div>
+                  <span className="download-bytes-text">
+                    {downloadProgress && downloadProgress.total > 0
+                      ? `${(downloadProgress.downloaded / (1024 * 1024)).toFixed(1)} MB / ${(downloadProgress.total / (1024 * 1024)).toFixed(1)} MB`
+                      : ''}
+                  </span>
+                </div>
+                <div className="download-progress-track">
+                  <div
+                    className="download-progress-bar"
+                    style={{ width: `${Math.min(100, Math.max(2, downloadProgress?.percent ?? 0))}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

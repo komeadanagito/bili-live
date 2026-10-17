@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { copyText, invoke, listen, handleDragMouseDown, handleDragDoubleClick } from './bridge';
+import { copyText, invoke, listen, openOverlay, closeOverlay, isOverlayOpen, isDesktop } from './bridge';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import Navigation, { type TabKey } from './components/Navigation';
 import Header from './components/Header';
@@ -44,6 +44,7 @@ export default function App() {
   const [stats, setStats] = useState<LiveStats | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState('');
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   const mounted = useRef(false);
   const operation = useRef(false);
@@ -51,6 +52,47 @@ export default function App() {
   const eventRoom = useRef('');
 
   const options = useMemo(() => flattenAreas(areas), [areas]);
+
+  // 定期感知悬浮窗打开状态
+  useEffect(() => {
+    let active = true;
+    const check = async () => {
+      try {
+        const open = await isOverlayOpen();
+        if (active) setOverlayOpen(open);
+      } catch {}
+    };
+    void check();
+    const timer = setInterval(check, 1800);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const handleOpenOverlay = useCallback(() => {
+    void (async () => {
+      try {
+        await openOverlay(theme);
+        setOverlayOpen(true);
+        setNotice('已开启实时弹幕悬浮窗。');
+      } catch (e) {
+        setError(errorText(e));
+      }
+    })();
+  }, [theme]);
+
+  const handleCloseOverlay = useCallback(() => {
+    void (async () => {
+      try {
+        await closeOverlay();
+        setOverlayOpen(false);
+        setNotice('已关闭实时弹幕悬浮窗。');
+      } catch (e) {
+        setError(errorText(e));
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!notice) return;
@@ -81,6 +123,11 @@ export default function App() {
     setTheme(current => {
       const next = current === 'dark' ? 'pink-light' : 'dark';
       setNotice(next === 'pink-light' ? '已切换至白粉液态玻璃主题' : '已切换至黑浅蓝透明玻璃主题');
+      if (isDesktop) {
+        import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+          void getCurrentWindow().emit('theme-changed', next);
+        }).catch(() => {});
+      }
       return next;
     });
   }, []);
@@ -323,6 +370,7 @@ export default function App() {
       await copyText(value);
       if (!mounted.current) return;
       setCopied(name);
+      setNotice('已复制到剪贴板。');
       if (copyTimer.current) clearTimeout(copyTimer.current);
       copyTimer.current = setTimeout(() => {
         if (mounted.current) setCopied('');
@@ -347,21 +395,8 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* 极缓环境沐光流动层 (Ambient Slow Sunlight Shimmer) */}
-      <div className="ambient-sunlight-canvas" aria-hidden="true" data-tauri-drag-region>
-        <div className="sunbeam-orb orb-pink" />
-        <div className="sunbeam-orb orb-blue" />
-        <div className="sunbeam-orb orb-amber" />
-        <div className="sunbeam-orb orb-purple" />
-      </div>
-
-      {/* Invisible Global Top Edge Drag Bar */}
-      <div
-        className="app-window-drag-strip"
-        data-tauri-drag-region
-        onMouseDown={handleDragMouseDown}
-        onDoubleClick={handleDragDoubleClick}
-      />
+      {/* 高性能环境渐变背景 (0% GPU 静默光效，纯粹背景层，禁止拦截事件) */}
+      <div className="ambient-sunlight-canvas" aria-hidden="true" />
 
       {/* Minimal Left Sidebar Navigation */}
       <Navigation
@@ -434,6 +469,9 @@ export default function App() {
                 onConnect={connectRoom}
                 onDisconnect={disconnectRoom}
                 onClearMessages={() => setMessages([])}
+                onOpenOverlay={handleOpenOverlay}
+                onCloseOverlay={handleCloseOverlay}
+                overlayOpen={overlayOpen}
               />
             )}
 
@@ -474,6 +512,8 @@ export default function App() {
                 onOpenLogin={() => setLoginOpen(true)}
                 onRefreshAccount={refreshAccount}
                 onLogoutConfirm={() => setConfirm('logout')}
+                onNotify={setNotice}
+                onError={setError}
               />
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import {
   Search,
   Trash2,
@@ -10,10 +10,10 @@ import {
   Lock,
   Unlock,
   Sparkles,
+  Tv,
 } from 'lucide-react';
 import MetricCapsule, { formatMetricNumber } from './MetricCapsule';
 import type { Account, ConnectionStatus, LiveMessage, MessageKind } from '../types';
-import { handleDragMouseDown } from '../bridge';
 import { renderMessageWithEmoticons } from '../emoticons';
 
 const KIND_LABELS: Record<MessageKind, string> = {
@@ -41,6 +41,9 @@ interface Props {
   onConnect: () => void;
   onDisconnect: () => void;
   onClearMessages: () => void;
+  onOpenOverlay?: () => void;
+  onCloseOverlay?: () => void;
+  overlayOpen?: boolean;
 }
 
 export default function InteractionView({
@@ -58,24 +61,30 @@ export default function InteractionView({
   onConnect,
   onDisconnect,
   onClearMessages,
+  onOpenOverlay,
+  onCloseOverlay,
+  overlayOpen,
 }: Props) {
   const [autoScroll, setAutoScroll] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const isConnected = connection.state === 'connected' || connection.state === 'connecting' || connection.state === 'reconnecting';
 
-  // Filter messages
-  const filteredMessages = messages.filter(msg => {
-    if (filter !== 'all' && msg.kind !== filter) return false;
-    if (query) {
-      const q = query.toLowerCase();
-      const matchUser = (msg.user || '').toLowerCase().includes(q);
-      const matchText = (msg.text || '').toLowerCase().includes(q);
-      const matchMedal = (msg.medal || '').toLowerCase().includes(q);
-      return matchUser || matchText || matchMedal;
-    }
-    return true;
-  });
+  // Filter messages (使用 useMemo 缓存，防止每次微小重绘都全量重新计算)
+  const filteredMessages = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q && filter === 'all') return messages;
+    return messages.filter(msg => {
+      if (filter !== 'all' && msg.kind !== filter) return false;
+      if (q) {
+        const matchUser = (msg.user || '').toLowerCase().includes(q);
+        const matchText = (msg.text || '').toLowerCase().includes(q);
+        const matchMedal = (msg.medal || '').toLowerCase().includes(q);
+        return matchUser || matchText || matchMedal;
+      }
+      return true;
+    });
+  }, [messages, filter, query]);
 
   // Auto scroll effect
   useEffect(() => {
@@ -105,13 +114,9 @@ export default function InteractionView({
 
   return (
     <div className="view-container interaction-view">
-      {/* Top Deck: Connection Control (空白处支持拖动窗口) */}
-      <section
-        className="interaction-deck-top card"
-        data-tauri-drag-region
-        onMouseDown={handleDragMouseDown}
-      >
-        <div className="deck-col-inputs" data-no-drag>
+      {/* Top Deck: Connection Control */}
+      <section className="interaction-deck-top card">
+        <div className="deck-col-inputs">
           <div className="input-group">
             <span className="input-prefix">直播间</span>
             <input
@@ -232,6 +237,26 @@ export default function InteractionView({
               )}
             </div>
 
+            {/* 开启 / 关闭浮窗按钮 (图3标注位置: 纯粹直观的开启/关闭浮窗) */}
+            <button
+              type="button"
+              className={`action-pill-btn btn-overlay-trigger ${overlayOpen ? 'active-icon active-overlay' : ''}`}
+              onClick={() => {
+                if (overlayOpen) {
+                  onCloseOverlay?.();
+                } else {
+                  onOpenOverlay?.();
+                }
+              }}
+              title={overlayOpen ? '关闭浮窗' : '开启浮窗'}
+              aria-label={overlayOpen ? '关闭浮窗' : '开启浮窗'}
+            >
+              <Tv size={14} />
+              <span className="action-pill-label">
+                {overlayOpen ? '关闭浮窗' : '开启浮窗'}
+              </span>
+            </button>
+
             <button
               className={`action-pill-btn ${autoScroll ? 'active-icon' : ''}`}
               onClick={() => setAutoScroll(prev => !prev)}
@@ -283,7 +308,7 @@ export default function InteractionView({
   );
 }
 
-function MessageItem({ message }: { message: LiveMessage }) {
+const MessageItem = memo(function MessageItem({ message }: { message: LiveMessage }) {
   const isSc = message.kind === 'superchat';
   const isGift = message.kind === 'gift';
   const isGuard = message.kind === 'guard';
@@ -346,4 +371,4 @@ function MessageItem({ message }: { message: LiveMessage }) {
       </div>
     </article>
   );
-}
+});

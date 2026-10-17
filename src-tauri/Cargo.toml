@@ -1,6 +1,6 @@
 [package]
 name = "bili-live-desktop"
-version = "0.1.1"
+version = "0.1.2"
 description = "Bilibili live control and message desktop client"
 edition = "2021"
 default-run = "bili-live-desktop"
@@ -21,7 +21,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "rustls-tls", "stream"] }
 tokio = { version = "1", features = ["sync", "time", "rt-multi-thread", "macros"] }
 tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
 futures-util = "0.3"

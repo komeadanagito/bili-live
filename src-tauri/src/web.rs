@@ -132,6 +132,23 @@ async fn handle_invoke(
             Ok(()) => Json(json!({})).into_response(),
             Err(e) => err_resp(e),
         },
+        "open_overlay_window"
+        | "close_overlay_window"
+        | "set_overlay_click_through"
+        | "set_overlay_always_on_top" => Json(json!({})).into_response(),
+        "is_overlay_open" => Json(false).into_response(),
+        "get_app_version" => Json(env!("CARGO_PKG_VERSION")).into_response(),
+        "check_app_update" => {
+            match crate::updater::check_update(env!("CARGO_PKG_VERSION")).await {
+                Ok(res) => Json(res).into_response(),
+                Err(e) => err_resp(e),
+            }
+        }
+        "download_and_install_update" => {
+            // Web 端不直接执行 exe 安装，返回错误或提示在浏览器下载
+            err_resp("网页预览模式不支持本地直接安装，请直接在 Release 页面下载安装包".to_string())
+        }
+        "open_external_url" => Json(json!({})).into_response(),
         _ => (
             StatusCode::NOT_FOUND,
             Json(ErrorResponse {

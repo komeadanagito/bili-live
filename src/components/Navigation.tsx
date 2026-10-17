@@ -1,6 +1,5 @@
 import { MessageSquare, Radio, BarChart2, User } from 'lucide-react';
 import BiliTvIcon from './BiliTvIcon';
-import { handleDragMouseDown } from '../bridge';
 
 export type TabKey = 'interaction' | 'broadcast' | 'stats' | 'account';
 
@@ -41,23 +40,27 @@ export default function Navigation({ activeTab, onSelectTab, live, messageCount,
   ];
 
   return (
-    <aside className="app-nav" data-tauri-drag-region onMouseDown={handleDragMouseDown}>
-      {/* 纯净粉色小电视 LOGO (无任何底色/边框/提示气泡，透明清爽) */}
-      <div
-        className="nav-brand-pure"
-        data-tauri-drag-region
-        onClick={() => onSelectTab('interaction')}
-      >
-        <BiliTvIcon size={40} color="#ff6699" className="bili-tv-svg" />
+    <aside className="app-nav">
+      {/* 纯净粉色小电视 LOGO (支持点击回到首页) */}
+      <div className="nav-brand-pure">
+        <button
+          type="button"
+          className="brand-logo-btn"
+          onClick={() => onSelectTab('interaction')}
+          aria-label="返回实时互动"
+        >
+          <BiliTvIcon size={40} color="#ff6699" className="bili-tv-svg" />
+        </button>
       </div>
 
-      <nav className="nav-menu" data-no-drag>
+      <nav className="nav-menu">
         {tabs.map(item => {
           const Icon = item.icon;
           const isActive = activeTab === item.key;
           return (
             <button
               key={item.key}
+              type="button"
               className={`nav-button ${isActive ? 'active' : ''}`}
               onClick={() => onSelectTab(item.key)}
               aria-current={isActive ? 'page' : undefined}
@@ -77,11 +80,10 @@ export default function Navigation({ activeTab, onSelectTab, live, messageCount,
         })}
       </nav>
 
-      {/* 侧边栏底部大面积空白拖拽区 (随手按住即可拖动窗口) */}
+      {/* 侧边栏底部独立空白拖拽区 (专供随手拖拽，与上方按钮物理隔离互不干扰) */}
       <div
         className="nav-drag-spacer"
         data-tauri-drag-region
-        onMouseDown={handleDragMouseDown}
       />
     </aside>
   );
