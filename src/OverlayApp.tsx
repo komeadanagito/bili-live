@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
-import { listen, handleDragMouseDown, setOverlayAlwaysOnTop } from './bridge';
+import { listen, handleDragMouseDown, setOverlayPinned } from './bridge';
 import type { LiveMessage, Theme } from './types';
 import { renderMessageWithEmoticons } from './emoticons';
 import {
@@ -83,15 +83,22 @@ export default function OverlayApp() {
     };
   }, []);
 
-  // 切换“订在屏幕上”模式
-  const togglePin = useCallback(() => {
-    setIsPinned(prev => {
-      const next = !prev;
-      if (next) {
-        void setOverlayAlwaysOnTop(true);
-      }
-      return next;
-    });
+  // 切换“固定穿透”与“解锁移动”模式
+  const togglePin = useCallback(async () => {
+    const next = !isPinned;
+    setIsPinned(next);
+    try {
+      await setOverlayPinned(next);
+    } catch {
+      // 容错
+    }
+  }, [isPinned]);
+
+  // 组件卸载时恢复正常状态
+  useEffect(() => {
+    return () => {
+      void setOverlayPinned(false);
+    };
   }, []);
 
   // 滚动到底部
@@ -119,7 +126,10 @@ export default function OverlayApp() {
         onMouseDown={!isPinned ? handleDragMouseDown : undefined}
       >
         <div className="toolbar-left" data-tauri-drag-region={!isPinned ? true : undefined}>
-          <span className="overlay-drag-handle" title={isPinned ? '已订在屏幕上' : '按住拖动窗口'}>
+          <span
+            className="overlay-drag-handle"
+            title={isPinned ? '已固定穿透 (可直接操作悬浮窗背后的内容)' : '按住拖动窗口 (点击右上角图钉固定)'}
+          >
             <MessageSquare size={13} className="overlay-logo-icon" />
             <span className="overlay-title-text">弹幕</span>
           </span>
@@ -127,13 +137,13 @@ export default function OverlayApp() {
         </div>
 
         <div className="toolbar-actions" data-no-drag>
-          {/* 顶栏只保留“订在屏幕上”这一个按键：始终可自由交互，订住后其他区域锁死只能点订的再用 */}
+          {/* 顶栏图钉按钮：固定后全区域鼠标穿透操作背景，鼠标移至此图钉即刻可点击解开 */}
           <button
             type="button"
             className={`overlay-tool-btn overlay-pin-btn ${isPinned ? 'active-pinned' : ''}`}
             onClick={togglePin}
-            title={isPinned ? '已订住 (点击解开移动与操作)' : '订在屏幕上 (锁定防误触)'}
-            aria-label={isPinned ? '已订住' : '订在屏幕上'}
+            title={isPinned ? '已固定穿透 (鼠标可直接点击操作背景内容，点击图钉解开以移动)' : '固定悬浮窗 (固定后可直接操作悬浮窗背后的内容)'}
+            aria-label={isPinned ? '已固定穿透' : '固定悬浮窗'}
             data-no-drag
           >
             <Pin size={13} className={isPinned ? 'pin-icon-locked' : 'pin-icon-free'} />

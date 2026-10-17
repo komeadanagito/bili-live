@@ -134,6 +134,7 @@ async fn handle_invoke(
         },
         "open_overlay_window"
         | "close_overlay_window"
+        | "set_overlay_pinned"
         | "set_overlay_click_through"
         | "set_overlay_always_on_top" => Json(json!({})).into_response(),
         "is_overlay_open" => Json(false).into_response(),

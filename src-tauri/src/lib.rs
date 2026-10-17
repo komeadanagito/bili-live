@@ -9,7 +9,34 @@ pub mod web;
 
 use api::Result;
 use models::*;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Manager, State};
+
+static OVERLAY_PINNED: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "windows")]
+mod cursor_pos {
+    #[repr(C)]
+    #[derive(Default, Copy, Clone)]
+    pub struct POINT {
+        pub x: i32,
+        pub y: i32,
+    }
+
+    extern "system" {
+        pub fn GetCursorPos(lpPoint: *mut POINT) -> i32;
+    }
+
+    pub fn get_mouse_pos() -> Option<(i32, i32)> {
+        let mut pt = POINT::default();
+        let ret = unsafe { GetCursorPos(&mut pt) };
+        if ret != 0 {
+            Some((pt.x, pt.y))
+        } else {
+            None
+        }
+    }
+}
 
 pub struct AppState {
     pub core: core::AppCore,
@@ -69,10 +96,12 @@ async fn disconnect_room(state: State<'_, AppState>) -> Result<()> {
 #[tauri::command]
 async fn open_overlay_window(app: tauri::AppHandle, theme: Option<String>) -> std::result::Result<(), String> {
     use tauri::Manager;
+    OVERLAY_PINNED.store(false, Ordering::SeqCst);
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.show();
         let _ = win.unminimize();
         let _ = win.set_focus();
+        let _ = win.set_ignore_cursor_events(false);
         if let Some(t) = theme {
             use tauri::Emitter;
             let _ = win.emit("theme-changed", t);
@@ -117,9 +146,84 @@ async fn open_overlay_window(app: tauri::AppHandle, theme: Option<String>) -> st
 #[tauri::command]
 async fn close_overlay_window(app: tauri::AppHandle) -> std::result::Result<(), String> {
     use tauri::Manager;
+    OVERLAY_PINNED.store(false, Ordering::SeqCst);
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.close();
     }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_overlay_pinned(app: tauri::AppHandle, pinned: bool) -> std::result::Result<(), String> {
+    use tauri::Manager;
+    OVERLAY_PINNED.store(pinned, Ordering::SeqCst);
+
+    let Some(win) = app.get_webview_window("overlay") else {
+        return Ok(());
+    };
+
+    if !pinned {
+        // 解除固定：确保取消穿透，恢复窗口自由移动与操作
+        let _ = win.set_always_on_top(true);
+        let _ = win.set_ignore_cursor_events(false);
+        return Ok(());
+    }
+
+    // 开启固定模式：
+    let _ = win.set_always_on_top(true);
+    let _ = win.set_ignore_cursor_events(true);
+
+    #[cfg(target_os = "windows")]
+    {
+        let win_clone = win.clone();
+        tauri::async_runtime::spawn(async move {
+            let mut is_ignoring = true;
+
+            while OVERLAY_PINNED.load(Ordering::SeqCst) {
+                // 窗口关闭则退出
+                let Ok(is_visible) = win_clone.is_visible() else {
+                    break;
+                };
+                if !is_visible {
+                    break;
+                }
+
+                if let Some((mx, my)) = cursor_pos::get_mouse_pos() {
+                    let pos = win_clone.outer_position().unwrap_or_default();
+                    let size = win_clone.outer_size().unwrap_or_default();
+                    let scale = win_clone.scale_factor().unwrap_or(1.0);
+
+                    // 右上角图钉按钮物理屏幕热区 (宽约 54px，高约 44px)
+                    let btn_w = (54.0 * scale) as i32;
+                    let btn_h = (44.0 * scale) as i32;
+
+                    let pin_x_min = pos.x + size.width as i32 - btn_w;
+                    let pin_x_max = pos.x + size.width as i32;
+                    let pin_y_min = pos.y;
+                    let pin_y_max = pos.y + btn_h;
+
+                    let in_pin_btn = mx >= pin_x_min && mx <= pin_x_max && my >= pin_y_min && my <= pin_y_max;
+
+                    if in_pin_btn {
+                        // 鼠标位于图钉区域：解除穿透，允许鼠标点击图钉解锁移动
+                        if is_ignoring {
+                            let _ = win_clone.set_ignore_cursor_events(false);
+                            is_ignoring = false;
+                        }
+                    } else if !is_ignoring && OVERLAY_PINNED.load(Ordering::SeqCst) {
+                        // 鼠标位于悬浮窗其它内容区或窗口外：保持穿透，支持操作背景内容
+                        let _ = win_clone.set_ignore_cursor_events(true);
+                        is_ignoring = true;
+                    }
+                }
+
+                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+            }
+
+            let _ = win_clone.set_ignore_cursor_events(false);
+        });
+    }
+
     Ok(())
 }
 
@@ -231,6 +335,7 @@ pub fn run() {
             disconnect_room,
             open_overlay_window,
             close_overlay_window,
+            set_overlay_pinned,
             set_overlay_click_through,
             set_overlay_always_on_top,
             is_overlay_open,

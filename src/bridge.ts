@@ -247,6 +247,12 @@ export async function closeOverlay(): Promise<void> {
   }
 }
 
+export async function setOverlayPinned(pinned: boolean): Promise<void> {
+  if (isDesktop) {
+    await invoke('set_overlay_pinned', { pinned });
+  }
+}
+
 export async function setOverlayClickThrough(ignore: boolean): Promise<void> {
   if (isDesktop) {
     await invoke('set_overlay_click_through', { ignore });
